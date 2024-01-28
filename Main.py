@@ -1,5 +1,6 @@
 import numpy as np
-import random,time
+import random,time,math
+import pygame
 
 #Seting up the grid
 def SetupGrid():
@@ -41,15 +42,13 @@ class Solver:
     def __init__(self,Grid) -> None:
 
         self.Grid = Grid
-        while len(self.Grid[self.Grid == 0]) > 0:
-            #print(Grid)
-            #time.sleep(2)
-            Position,Possibilities = self.FindLowestPossibility()
-            choice = random.choice(list(Possibilities))
-            #print(Position,choice)
-            self.Grid[Position[0],Position[1]] = choice
-        
-        print(self.Grid)
+        # while len(self.Grid[self.Grid == 0]) > 0:
+        #     #print(Grid)
+        #     #time.sleep(2)
+        #     Position,Possibilities = self.FindLowestPossibility()
+        #     choice = random.choice(list(Possibilities))
+        #     self.Grid[Position[0],Position[1]] = choice
+    
     
     def Check_Horizontal(self,i):
         Row = self.Grid[i,:]
@@ -103,5 +102,128 @@ class Solver:
             pass
             
         return LowestCoord, LowestPossibilities
+    
+    def CheckGrid(self):
+                #Check through each element of the grid and find the element of the lowest guesses
+        for i in range(9):
+            for j in range(9):
+                if self.Grid[i,j] != 0: continue
 
-Solver(SetupGrid())
+                possibilities = set(range(1,10)) #used for better lookup times
+                known_values = set()
+                for val in self.Check_Horizontal(i): known_values.add(val)
+                for val in self.Check_Vertical(j): known_values.add(val)
+                for val in self.Check_Square(i,j): known_values.add(val)
+
+                result = possibilities.difference(known_values)
+
+                if len(result) >0:
+                    return False
+            pass
+            
+        return True
+
+grid = SetupGrid()
+solver = Solver(grid)
+
+# pygame setup
+WINDOW_WIDTH = 600
+WINDOW_HEIGHT = 700
+
+buttonwidth = 200
+buttonheight = 50
+
+INSET = WINDOW_WIDTH*0.05
+pygame.init()
+screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+clock = pygame.time.Clock()
+running = True
+
+font = pygame.font.Font('freesansbold.ttf',40)
+def drawGrid(grid,selectedSquare):
+    blockSize = math.ceil((WINDOW_WIDTH -INSET*2)/ 9) #Set the size of the grid block
+    for x in range(9):
+        for y in range(9):
+            rect = pygame.Rect(x*blockSize+INSET, y*blockSize+INSET, blockSize, blockSize)
+            pygame.draw.rect(screen, (0,0,0), rect, 1)
+            numb = int(grid[y,x])
+            if selectedSquare ==[x,y]:
+                pygame.draw.rect(screen, (255,0,0), rect, 2)
+            else:
+                pygame.draw.rect(screen, (0,0,0), rect, 1)
+            if numb != 0:
+                value = font.render(str(numb),True,(0,0,0))
+                screen.blit(value,(x*blockSize+blockSize*17.5/20,y*blockSize+blockSize*15/20))
+
+tick = 0
+selectedSquare = None
+Started = False
+while running:
+    # poll for events
+    # pygame.QUIT event means the user clicked X to close your window
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        elif event.type == pygame.MOUSEBUTTONUP and not Started:
+            pos = pygame.mouse.get_pos()
+            #Normalizing the position
+            x = math.floor((pos[0] - INSET)/math.ceil((WINDOW_WIDTH -INSET*2)/ 9))
+            y = math.floor((pos[1] - INSET)/math.ceil((WINDOW_WIDTH -INSET*2)/ 9))
+            if x < 0 or y < 0 or x>8 or y > 8:
+                pass
+            else:
+                selectedSquare = [x,y]
+            
+            if WINDOW_WIDTH/2-buttonwidth/2 < pos[0] < WINDOW_WIDTH/2+buttonwidth/2 and WINDOW_HEIGHT-50-buttonheight/2 < pos[1] < WINDOW_HEIGHT-50+buttonheight/2:
+                Started = True
+                selectedSquare = [10,10]
+        elif event.type == pygame.KEYDOWN:
+            if selectedSquare != None and not Started:
+                if event.key == pygame.K_0:
+                    solver.Grid[selectedSquare[1],selectedSquare[0]] = 0
+                elif event.key == pygame.K_1:
+                    solver.Grid[selectedSquare[1],selectedSquare[0]] = 1
+                elif event.key == pygame.K_2:
+                    solver.Grid[selectedSquare[1],selectedSquare[0]] = 2
+                elif event.key == pygame.K_3:
+                    solver.Grid[selectedSquare[1],selectedSquare[0]] = 3
+                elif event.key == pygame.K_4:
+                    solver.Grid[selectedSquare[1],selectedSquare[0]] = 4
+                elif event.key == pygame.K_5:
+                    solver.Grid[selectedSquare[1],selectedSquare[0]] = 5
+                elif event.key == pygame.K_6:
+                    solver.Grid[selectedSquare[1],selectedSquare[0]] = 6
+                elif event.key == pygame.K_7:
+                    solver.Grid[selectedSquare[1],selectedSquare[0]] = 7
+                elif event.key == pygame.K_8:
+                    solver.Grid[selectedSquare[1],selectedSquare[0]] = 8
+                elif event.key == pygame.K_9:
+                    solver.Grid[selectedSquare[1],selectedSquare[0]] = 9
+
+    # fill the screen with a color to wipe away anything from last frame
+    screen.fill((200,200,200))
+
+    # RENDER YOUR GAME HERE
+    drawGrid(grid,selectedSquare)
+
+    if not Started:
+
+        rect = pygame.Rect(WINDOW_WIDTH/2-buttonwidth/2,WINDOW_HEIGHT-50-buttonheight/2,buttonwidth,buttonheight)
+        pygame.draw.rect(screen, (46,46,46), rect)
+        value = font.render("Start",True,(200,200,200))
+        screen.blit(value,(WINDOW_WIDTH/2 - 50,WINDOW_HEIGHT-65))
+
+    #Do Step
+    if Started:
+        if len(solver.Grid[solver.Grid == 0]) > 0 and tick% 60 ==0:
+            Position,Possibilities = solver.FindLowestPossibility()
+            choice = random.choice(list(Possibilities))
+            solver.Grid[Position[0],Position[1]] = choice
+
+    # flip() the display to put your work on screen
+    pygame.display.flip()
+
+    clock.tick(60)  # limits FPS to 60
+    tick+=1
+
+pygame.quit()
