@@ -41,6 +41,7 @@ class Solver:
     def __init__(self,Grid) -> None:
 
         self.Grid = Grid
+        self.Paths = []
         while len(self.Grid[self.Grid == 0]) > 0:
             #print(Grid)
             #time.sleep(2)
