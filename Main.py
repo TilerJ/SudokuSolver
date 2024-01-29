@@ -40,9 +40,34 @@ def SetupGrid():
 
 class Solver:
     def __init__(self,Grid) -> None:
-
+        self.Order = []
         self.Grid = Grid
-    
+
+    def Step(self):
+        if len(solver.Grid[solver.Grid == 0]) > 0:
+            Position,Possibilities = solver.FindLowestPossibility()
+            if len(Possibilities) == 0:
+                #need to back track
+                newpathfound = False
+                while not newpathfound:
+                    Position,Possibilities = self.Order.pop()
+                    print(Position,Possibilities)
+                    solver.Grid[Position[0],Position[1]] = 0
+                    if len(Possibilities) > 0:
+                        choice = random.choice(list(Possibilities))
+                        Possibilities.remove(choice)
+                        solver.Grid[Position[0],Position[1]] = choice
+                        self.Order.append([Position,Possibilities])
+                        newpathfound = True
+
+
+                pass
+            else:
+                choice = random.choice(list(Possibilities))
+                Possibilities.remove(choice)
+                solver.Grid[Position[0],Position[1]] = choice
+                self.Order.append([Position,Possibilities])
+
     def Check_Horizontal(self,i):
         Row = self.Grid[i,:]
         return Row[Row !=0]
@@ -66,6 +91,17 @@ class Solver:
 
         return values
         pass
+    
+    def GetPossibility(self,Position):
+        possibilities = set(range(1,10)) #used for better lookup times
+        known_values = set()
+        for val in self.Check_Horizontal(Position[0]): known_values.add(val)
+        for val in self.Check_Vertical(Position[1]): known_values.add(val)
+        for val in self.Check_Square(Position[0],Position[1]): known_values.add(val)
+
+        result = possibilities.difference(known_values)
+
+        return result
 
     def FindLowestPossibility(self):
         
@@ -116,7 +152,7 @@ class Solver:
             
         return True
 
-grid = SetupGrid()
+grid = Grid = np.zeros([9,9])#SetupGrid()
 solver = Solver(grid)
 
 # pygame setup
@@ -135,6 +171,14 @@ running = True
 font = pygame.font.Font('freesansbold.ttf',40)
 def drawGrid(grid,selectedSquare):
     blockSize = math.ceil((WINDOW_WIDTH -INSET*2)/ 9) #Set the size of the grid block
+
+    #thicker lines
+    for x in range(3):
+        for y in range(3):
+            rect = pygame.Rect(x*blockSize*3+INSET, y*blockSize*3+INSET, blockSize*3, blockSize*3)
+            pygame.draw.rect(screen, (0,0,0), rect, 3)
+
+
     for x in range(9):
         for y in range(9):
             rect = pygame.Rect(x*blockSize+INSET, y*blockSize+INSET, blockSize, blockSize)
@@ -207,11 +251,8 @@ while running:
         screen.blit(value,(WINDOW_WIDTH/2 - 50,WINDOW_HEIGHT-65))
 
     #Do Step
-    if Started:
-        if len(solver.Grid[solver.Grid == 0]) > 0 and tick% 60 ==0:
-            Position,Possibilities = solver.FindLowestPossibility()
-            choice = random.choice(list(Possibilities))
-            solver.Grid[Position[0],Position[1]] = choice
+    if Started and tick% 1 ==0:
+        solver.Step()
 
     # flip() the display to put your work on screen
     pygame.display.flip()
