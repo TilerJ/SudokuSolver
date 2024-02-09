@@ -46,6 +46,7 @@ class Solver:
     def Step(self):
         if len(solver.Grid[solver.Grid == 0]) > 0:
             Position,Possibilities = solver.FindLowestPossibility()
+            print(Possibilities)
             if len(Possibilities) == 0:
                 #need to back track
                 newpathfound = False
@@ -152,7 +153,7 @@ class Solver:
             
         return True
 
-grid = Grid = np.zeros([9,9])#SetupGrid()
+grid = Grid = SetupGrid() #np.zeros([9,9])#
 solver = Solver(grid)
 
 # pygame setup
@@ -173,23 +174,24 @@ def drawGrid(grid,selectedSquare):
     blockSize = math.ceil((WINDOW_WIDTH -INSET*2)/ 9) #Set the size of the grid block
 
     #thicker lines
+    color = (0,0,0)#(220,220,220)
     for x in range(3):
         for y in range(3):
             rect = pygame.Rect(x*blockSize*3+INSET, y*blockSize*3+INSET, blockSize*3, blockSize*3)
-            pygame.draw.rect(screen, (0,0,0), rect, 3)
+            pygame.draw.rect(screen, color, rect, 3)
 
 
     for x in range(9):
         for y in range(9):
             rect = pygame.Rect(x*blockSize+INSET, y*blockSize+INSET, blockSize, blockSize)
-            pygame.draw.rect(screen, (0,0,0), rect, 1)
+            pygame.draw.rect(screen, color, rect, 1)
             numb = int(grid[y,x])
             if selectedSquare ==[x,y]:
                 pygame.draw.rect(screen, (255,0,0), rect, 2)
             else:
-                pygame.draw.rect(screen, (0,0,0), rect, 1)
+                pygame.draw.rect(screen, color, rect, 1)
             if numb != 0:
-                value = font.render(str(numb),True,(0,0,0))
+                value = font.render(str(numb),True,color)
                 screen.blit(value,(x*blockSize+blockSize*17.5/20,y*blockSize+blockSize*15/20))
 
 tick = 0
@@ -236,9 +238,17 @@ while running:
                     solver.Grid[selectedSquare[1],selectedSquare[0]] = 8
                 elif event.key == pygame.K_9:
                     solver.Grid[selectedSquare[1],selectedSquare[0]] = 9
+                elif event.key == pygame.K_LEFT and selectedSquare[0] > 0 :
+                    selectedSquare[0] -=1
+                elif event.key == pygame.K_RIGHT and selectedSquare[0] < 8 :
+                    selectedSquare[0] +=1
+                elif event.key == pygame.K_UP and selectedSquare[1] > 0 :
+                    selectedSquare[1] -=1
+                elif event.key == pygame.K_DOWN and selectedSquare[1] < 8 :
+                    selectedSquare[1] +=1
 
     # fill the screen with a color to wipe away anything from last frame
-    screen.fill((200,200,200))
+    screen.fill((200,200,200))#(37,37,38))
 
     # RENDER YOUR GAME HERE
     drawGrid(grid,selectedSquare)
